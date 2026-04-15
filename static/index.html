@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Resume Builder - Get personalized resume recommendations and find the best job matches using machine learning.">
+    <title>ResumeAI — Smart Resume Analyzer & Job Matcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- ===== Hero / Upload Section ===== -->
+    <header class="hero" id="hero">
+        <div class="hero-bg-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+        <nav class="nav" id="nav">
+            <div class="nav-brand">
+                <span class="brand-icon">🧠</span>
+                <span class="brand-text">Resume<span class="brand-highlight">AI</span></span>
+            </div>
+            <div class="nav-links">
+                <a href="#hero" class="nav-link active">Upload</a>
+                <a href="#results-section" class="nav-link" id="nav-results" style="display:none;">Results</a>
+                <a href="#jobs-section" class="nav-link" id="nav-jobs" style="display:none;">Jobs</a>
+            </div>
+        </nav>
+        <div class="hero-content">
+            <div class="hero-badge">✨ Powered by Machine Learning</div>
+            <h1 class="hero-title">
+                Your Resume,<br>
+                <span class="gradient-text">Supercharged.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Upload your resume and get AI-powered recommendations to improve it,
+                plus discover the best matching jobs from our dataset — all using Hybrid ML (Sentence-BERT & TF-IDF).
+            </p>
+            
+            <!-- Upload Zone -->
+            <div class="upload-container" id="upload-container">
+                <div class="upload-zone" id="upload-zone">
+                    <div class="upload-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                    </div>
+                    <p class="upload-text">Drag & drop your resume PDF here</p>
+                    <p class="upload-subtext">or click to browse files</p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+                <div class="upload-divider">
+                    <span>OR</span>
+                </div>
+                <button class="btn-paste" id="btn-paste">
+                    📋 Paste Resume Text
+                </button>
+            </div>
+
+            <!-- Text Paste Modal -->
+            <div class="paste-modal" id="paste-modal" style="display:none;">
+                <div class="paste-modal-content">
+                    <div class="paste-modal-header">
+                        <h3>Paste Your Resume</h3>
+                        <button class="paste-modal-close" id="paste-modal-close">&times;</button>
+                    </div>
+                    <textarea id="resume-text-input" placeholder="Paste your entire resume text here...&#10;&#10;Example:&#10;John Doe&#10;Software Engineer&#10;Email: john@example.com&#10;&#10;Skills: Python, JavaScript, React...&#10;&#10;Experience:&#10;- Developed web applications using React..."></textarea>
+                    <button class="btn-analyze-text" id="btn-analyze-text">
+                        🔍 Analyze Resume
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-container" id="loading-container" style="display:none;">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+                <p class="loading-text" id="loading-text">Analyzing your resume...</p>
+                <div class="loading-steps" id="loading-steps">
+                    <div class="loading-step active" data-step="1">📄 Extracting text</div>
+                    <div class="loading-step" data-step="2">🔍 Detecting skills</div>
+                    <div class="loading-step" data-step="3">🤖 Running ML model</div>
+                    <div class="loading-step" data-step="4">💼 Matching jobs</div>
+                </div>
+            </div>
+
+            <!-- File Selected State -->
+            <div class="file-selected" id="file-selected" style="display:none;">
+                <div class="file-info">
+                    <span class="file-icon">📄</span>
+                    <span class="file-name" id="file-name">resume.pdf</span>
+                    <button class="file-remove" id="file-remove">&times;</button>
+                </div>
+                <button class="btn-analyze" id="btn-analyze">
+                    <span class="btn-icon">🚀</span>
+                    Analyze My Resume
+                </button>
+            </div>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-item">
+                <div class="stat-number" data-count="500">500+</div>
+                <div class="stat-label">Jobs in Dataset</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" data-count="150">150+</div>
+                <div class="stat-label">Skills Tracked</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" data-count="10">10</div>
+                <div class="stat-label">Job Categories</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== Results Section ===== -->
+    <main id="results-section" style="display:none;">
+        <!-- Score Overview -->
+        <section class="section score-section" id="score-section">
+            <div class="container">
+                <h2 class="section-title">Resume <span class="gradient-text">Analysis</span></h2>
+                <div class="score-grid">
+                    <!-- Score Circle -->
+                    <div class="score-card score-main">
+                        <div class="score-circle-wrapper">
+                            <svg class="score-circle" viewBox="0 0 200 200">
+                                <circle class="score-bg" cx="100" cy="100" r="85" />
+                                <circle class="score-fill" id="score-fill" cx="100" cy="100" r="85" />
+                            </svg>
+                            <div class="score-value">
+                                <span class="score-number" id="score-number">0</span>
+                                <span class="score-label">/ 100</span>
+                            </div>
+                        </div>
+                        <p class="score-verdict" id="score-verdict">Analyzing...</p>
+                    </div>
+                    <!-- Score Breakdown -->
+                    <div class="score-card score-breakdown">
+                        <h3 class="card-title">Score Breakdown</h3>
+                        <div class="breakdown-list" id="breakdown-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <!-- Skills Found -->
+                    <div class="score-card score-skills">
+                        <h3 class="card-title">Skills Detected</h3>
+                        <div class="skills-tag-cloud" id="skills-tag-cloud">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="skills-count" id="skills-count"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Prediction Section -->
+        <section class="section prediction-section" id="prediction-section" style="display:none;">
+            <div class="container">
+                <h2 class="section-title">AI Career <span class="gradient-text">Prediction</span></h2>
+                <p class="section-subtitle">Our Naive Bayes classifier analyzed your resume to predict your optimal career tracks.</p>
+                <div class="prediction-grid" id="prediction-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations Section -->
+        <section class="section recommendations-section" id="recommendations-section">
+            <div class="container">
+                <h2 class="section-title">📋 Improvement <span class="gradient-text">Recommendations</span></h2>
+                <p class="section-subtitle">Here's what you should add to make your resume stand out</p>
+                <div class="recommendations-grid" id="recommendations-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Skill Gap Section -->
+        <section class="section skill-gap-section" id="skill-gap-section">
+            <div class="container">
+                <h2 class="section-title">⚡ Skills to <span class="gradient-text">Learn</span></h2>
+                <p class="section-subtitle">Based on your top matched jobs, here are the most in-demand skills you're missing</p>
+                <div class="skill-gap-grid" id="skill-gap-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Job Matches Section -->
+        <section class="section jobs-section" id="jobs-section">
+            <div class="container">
+                <h2 class="section-title">💼 Best Job <span class="gradient-text">Matches</span></h2>
+                <p class="section-subtitle">Top jobs matched to your resume using TF-IDF & Cosine Similarity</p>
+                <div class="jobs-grid" id="jobs-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Error Toast -->
+    <div class="toast" id="error-toast" style="display:none;">
+        <span class="toast-icon">⚠️</span>
+        <span class="toast-message" id="toast-message">Error message</span>
+        <button class="toast-close" id="toast-close">&times;</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+        <div class="container">
+            <p>Built with 🧠 Machine Learning · TF-IDF · Cosine Similarity · scikit-learn</p>
+            <p class="footer-sub">ML Resume Builder — A Student Project</p>
+        </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

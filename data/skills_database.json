@@ -1,0 +1,70 @@
+{
+  "programming_languages": [
+    "python", "java", "javascript", "c++", "c#", "c", "ruby", "php", "swift",
+    "kotlin", "go", "rust", "typescript", "scala", "r", "matlab", "perl",
+    "objective-c", "dart", "lua", "haskell", "elixir", "clojure", "julia"
+  ],
+  "web_frameworks": [
+    "react", "angular", "vue", "django", "flask", "spring boot", "express",
+    "next.js", "nuxt.js", "ruby on rails", "laravel", "asp.net", "fastapi",
+    "svelte", "ember", "backbone.js", "gatsby", "nest.js"
+  ],
+  "databases": [
+    "mysql", "postgresql", "mongodb", "sqlite", "redis", "elasticsearch",
+    "cassandra", "dynamodb", "oracle", "sql server", "firebase", "neo4j",
+    "couchdb", "mariadb", "influxdb", "cockroachdb"
+  ],
+  "cloud_platforms": [
+    "aws", "azure", "google cloud", "gcp", "heroku", "digitalocean",
+    "cloudflare", "alibaba cloud", "oracle cloud", "ibm cloud"
+  ],
+  "devops_tools": [
+    "docker", "kubernetes", "jenkins", "terraform", "ansible", "gitlab ci",
+    "github actions", "circleci", "travis ci", "puppet", "chef", "vagrant",
+    "prometheus", "grafana", "nagios", "helm", "argocd"
+  ],
+  "data_science": [
+    "pandas", "numpy", "scikit-learn", "tensorflow", "pytorch", "keras",
+    "matplotlib", "seaborn", "plotly", "scipy", "statsmodels", "xgboost",
+    "lightgbm", "catboost", "opencv", "nltk", "spacy", "hugging face",
+    "mlflow", "dvc", "airflow", "spark", "hadoop", "tableau", "power bi"
+  ],
+  "mobile_development": [
+    "react native", "flutter", "swift ui", "android sdk", "ios sdk",
+    "xamarin", "ionic", "cordova", "expo"
+  ],
+  "version_control": [
+    "git", "github", "gitlab", "bitbucket", "svn", "mercurial"
+  ],
+  "testing": [
+    "jest", "pytest", "junit", "selenium", "cypress", "mocha", "chai",
+    "rspec", "testng", "playwright", "puppeteer", "unittest"
+  ],
+  "soft_skills": [
+    "leadership", "communication", "teamwork", "problem solving",
+    "critical thinking", "time management", "adaptability", "creativity",
+    "collaboration", "project management", "agile", "scrum", "mentoring",
+    "presentation", "negotiation", "analytical thinking", "decision making"
+  ],
+  "certifications": [
+    "aws certified", "azure certified", "google cloud certified",
+    "cisco certified", "comptia", "pmp", "scrum master", "cissp",
+    "ceh", "oracle certified", "salesforce certified", "kubernetes certified"
+  ],
+  "tools": [
+    "jira", "confluence", "slack", "trello", "asana", "notion",
+    "figma", "adobe xd", "sketch", "invision", "postman", "swagger",
+    "visual studio code", "intellij", "eclipse", "vim", "linux",
+    "windows server", "nginx", "apache", "rabbitmq", "kafka"
+  ],
+  "security": [
+    "oauth", "jwt", "ssl/tls", "encryption", "firewall", "penetration testing",
+    "vulnerability assessment", "siem", "iam", "zero trust", "owasp"
+  ],
+  "methodologies": [
+    "agile", "scrum", "kanban", "waterfall", "devops", "ci/cd",
+    "tdd", "bdd", "microservices", "rest api", "graphql", "soap",
+    "event driven", "domain driven design", "solid principles",
+    "design patterns", "object oriented programming", "functional programming"
+  ]
+}
