@@ -5,6 +5,14 @@ Serves the frontend and provides API endpoints for resume analysis.
 import os
 import sys
 from flask import Flask, request, jsonify, send_from_directory
+
+# Load .env variables before any ML imports
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed yet
+
 from ml.resume_parser import parse_resume
 from ml.recommender import analyze_resume, load_jobs_dataset
 
@@ -35,15 +43,16 @@ def analyze():
     """
     # Check if file was uploaded
     if "resume" not in request.files:
-        return jsonify({"error": "No resume file uploaded. Please upload a PDF file."}), 400
+        return jsonify({"error": "No resume file uploaded. Please upload a PDF, DOCX, or TXT file."}), 400
     
     file = request.files["resume"]
     
     if file.filename == "":
-        return jsonify({"error": "No file selected. Please choose a PDF file."}), 400
+        return jsonify({"error": "No file selected. Please choose a file."}), 400
     
-    if not file.filename.lower().endswith(".pdf"):
-        return jsonify({"error": "Only PDF files are supported. Please upload a .pdf file."}), 400
+    file_ext = os.path.splitext(file.filename.lower())[1]
+    if file_ext not in [".pdf", ".docx", ".txt"]:
+        return jsonify({"error": "Only PDF, DOCX, and TXT files are supported."}), 400
     
     try:
         # Parse the resume

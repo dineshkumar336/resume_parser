@@ -11,16 +11,19 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+    <!-- Geometric Background Blocks -->
+    <div class="bg-design-blocks">
+        <div class="design-block shape-1"></div>
+        <div class="design-block shape-2"></div>
+        <div class="design-block shape-3"></div>
+        <div class="design-block shape-4"></div>
+    </div>
+    
     <!-- ===== Hero / Upload Section ===== -->
     <header class="hero" id="hero">
-        <div class="hero-bg-orbs">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-            <div class="orb orb-3"></div>
-        </div>
+
         <nav class="nav" id="nav">
             <div class="nav-brand">
-                <span class="brand-icon">🧠</span>
                 <span class="brand-text">Resume<span class="brand-highlight">AI</span></span>
             </div>
             <div class="nav-links">
@@ -30,7 +33,7 @@
             </div>
         </nav>
         <div class="hero-content">
-            <div class="hero-badge">✨ Powered by Machine Learning</div>
+            <div class="hero-badge">Powered by Machine Learning</div>
             <h1 class="hero-title">
                 Your Resume,<br>
                 <span class="gradient-text">Supercharged.</span>
@@ -50,15 +53,15 @@
                             <line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
                     </div>
-                    <p class="upload-text">Drag & drop your resume PDF here</p>
+                    <p class="upload-text">Drag & drop your resume (PDF, DOCX, TXT) here</p>
                     <p class="upload-subtext">or click to browse files</p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <input type="file" id="file-input" accept=".pdf,.docx,.txt" hidden>
                 </div>
                 <div class="upload-divider">
                     <span>OR</span>
                 </div>
                 <button class="btn-paste" id="btn-paste">
-                    📋 Paste Resume Text
+                    Paste Resume Text
                 </button>
             </div>
 
@@ -71,7 +74,7 @@
                     </div>
                     <textarea id="resume-text-input" placeholder="Paste your entire resume text here...&#10;&#10;Example:&#10;John Doe&#10;Software Engineer&#10;Email: john@example.com&#10;&#10;Skills: Python, JavaScript, React...&#10;&#10;Experience:&#10;- Developed web applications using React..."></textarea>
                     <button class="btn-analyze-text" id="btn-analyze-text">
-                        🔍 Analyze Resume
+                        Analyze Resume
                     </button>
                 </div>
             </div>
@@ -85,22 +88,21 @@
                 </div>
                 <p class="loading-text" id="loading-text">Analyzing your resume...</p>
                 <div class="loading-steps" id="loading-steps">
-                    <div class="loading-step active" data-step="1">📄 Extracting text</div>
-                    <div class="loading-step" data-step="2">🔍 Detecting skills</div>
-                    <div class="loading-step" data-step="3">🤖 Running ML model</div>
-                    <div class="loading-step" data-step="4">💼 Matching jobs</div>
+                    <div class="loading-step active" data-step="1">Extracting text</div>
+                    <div class="loading-step" data-step="2">Detecting skills</div>
+                    <div class="loading-step" data-step="3">Running ML model</div>
+                    <div class="loading-step" data-step="4">🌐 Fetching live jobs</div>
+                    <div class="loading-step" data-step="5">Matching & scoring</div>
                 </div>
             </div>
 
             <!-- File Selected State -->
             <div class="file-selected" id="file-selected" style="display:none;">
                 <div class="file-info">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name" id="file-name">resume.pdf</span>
+                    <span class="file-name" id="file-name">resume</span>
                     <button class="file-remove" id="file-remove">&times;</button>
                 </div>
                 <button class="btn-analyze" id="btn-analyze">
-                    <span class="btn-icon">🚀</span>
                     Analyze My Resume
                 </button>
             </div>
@@ -108,7 +110,7 @@
         <div class="hero-stats">
             <div class="stat-item">
                 <div class="stat-number" data-count="500">500+</div>
-                <div class="stat-label">Jobs in Dataset</div>
+                <div class="stat-label">Live Jobs Fetched</div>
             </div>
             <div class="stat-item">
                 <div class="stat-number" data-count="150">150+</div>
@@ -175,7 +177,7 @@
         <!-- Recommendations Section -->
         <section class="section recommendations-section" id="recommendations-section">
             <div class="container">
-                <h2 class="section-title">📋 Improvement <span class="gradient-text">Recommendations</span></h2>
+                <h2 class="section-title">Improvement <span class="gradient-text">Recommendations</span></h2>
                 <p class="section-subtitle">Here's what you should add to make your resume stand out</p>
                 <div class="recommendations-grid" id="recommendations-grid">
                     <!-- Populated by JS -->
@@ -186,7 +188,7 @@
         <!-- Skill Gap Section -->
         <section class="section skill-gap-section" id="skill-gap-section">
             <div class="container">
-                <h2 class="section-title">⚡ Skills to <span class="gradient-text">Learn</span></h2>
+                <h2 class="section-title">Skills to <span class="gradient-text">Learn</span></h2>
                 <p class="section-subtitle">Based on your top matched jobs, here are the most in-demand skills you're missing</p>
                 <div class="skill-gap-grid" id="skill-gap-grid">
                     <!-- Populated by JS -->
@@ -197,7 +199,7 @@
         <!-- Job Matches Section -->
         <section class="section jobs-section" id="jobs-section">
             <div class="container">
-                <h2 class="section-title">💼 Best Job <span class="gradient-text">Matches</span></h2>
+                <h2 class="section-title">Best Job <span class="gradient-text">Matches</span></h2>
                 <p class="section-subtitle">Top jobs matched to your resume using TF-IDF & Cosine Similarity</p>
                 <div class="jobs-grid" id="jobs-grid">
                     <!-- Populated by JS -->
@@ -208,7 +210,6 @@
 
     <!-- Error Toast -->
     <div class="toast" id="error-toast" style="display:none;">
-        <span class="toast-icon">⚠️</span>
         <span class="toast-message" id="toast-message">Error message</span>
         <button class="toast-close" id="toast-close">&times;</button>
     </div>
@@ -216,7 +217,7 @@
     <!-- Footer -->
     <footer class="footer" id="footer">
         <div class="container">
-            <p>Built with 🧠 Machine Learning · TF-IDF · Cosine Similarity · scikit-learn</p>
+            <p>Built with Machine Learning · TF-IDF · Cosine Similarity · scikit-learn</p>
             <p class="footer-sub">ML Resume Builder — A Student Project</p>
         </div>
     </footer>

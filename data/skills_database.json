@@ -49,7 +49,8 @@
   "certifications": [
     "aws certified", "azure certified", "google cloud certified",
     "cisco certified", "comptia", "pmp", "scrum master", "cissp",
-    "ceh", "oracle certified", "salesforce certified", "kubernetes certified"
+    "ceh", "oracle certified", "salesforce certified", "kubernetes certified",
+    "cfa", "cpa", "ca", "frm", "cia", "acca", "pmp", "six sigma", "lean"
   ],
   "tools": [
     "jira", "confluence", "slack", "trello", "asana", "notion",
@@ -66,5 +67,94 @@
     "tdd", "bdd", "microservices", "rest api", "graphql", "soap",
     "event driven", "domain driven design", "solid principles",
     "design patterns", "object oriented programming", "functional programming"
+  ],
+
+  "civil_engineering": [
+    "autocad", "revit", "staad pro", "primavera", "etabs", "safe",
+    "site management", "site engineer", "structural design", "rcc",
+    "concrete", "foundation", "surveying", "levelling", "quantity surveying",
+    "qs", "estimation", "billing", "construction management", "bim",
+    "civil engineering", "infrastructure", "highway", "road design",
+    "drainage", "irrigation", "geotechnical", "soil testing", "cad",
+    "ms project", "project planning", "contract management", "tender"
+  ],
+  "mechanical_engineering": [
+    "solidworks", "catia", "ansys", "pro-e", "creo", "unigraphics",
+    "autocad mechanical", "hvac", "cfd", "fea", "finite element",
+    "thermodynamics", "fluid mechanics", "manufacturing", "cnc",
+    "lathe", "milling", "welding", "metrology", "quality control",
+    "production planning", "lean manufacturing", "six sigma", "kaizen",
+    "plc", "scada", "mechanical design", "machine design", "cam"
+  ],
+  "electrical_engineering": [
+    "plc", "scada", "hmi", "electrical design", "autocad electrical",
+    "eplan", "matlab simulink", "power systems", "motor drives",
+    "vfd", "transformer", "switchgear", "relay protection", "dcs",
+    "instrumentation", "control systems", "pid", "embedded systems",
+    "arduino", "raspberry pi", "iot sensors", "electrical maintenance"
+  ],
+  "finance_accounting": [
+    "tally", "tally erp", "sap fico", "quickbooks", "xero", "zoho books",
+    "financial analysis", "financial modelling", "balance sheet", "p&l",
+    "income statement", "cash flow", "budgeting", "forecasting",
+    "accounts payable", "accounts receivable", "gst", "tds", "income tax",
+    "ifrs", "ind as", "gaap", "audit", "statutory audit", "internal audit",
+    "chartered accountant", "ca", "cfa", "cpa", "acca", "frm", "mba finance",
+    "valuation", "dcf", "investment banking", "equity research", "credit analysis"
+  ],
+  "marketing": [
+    "seo", "sem", "google ads", "facebook ads", "social media marketing",
+    "content marketing", "email marketing", "digital marketing",
+    "brand management", "market research", "consumer behavior",
+    "product marketing", "growth hacking", "a/b testing", "conversion rate",
+    "google analytics", "hubspot", "mailchimp", "hootsuite", "canva",
+    "copywriting", "pr", "public relations", "influencer marketing",
+    "performance marketing", "affiliate marketing", "crm", "salesforce"
+  ],
+  "human_resources": [
+    "recruitment", "talent acquisition", "sourcing", "onboarding",
+    "employee engagement", "performance management", "kpi", "okr",
+    "payroll", "hris", "workday", "sap hr", "darwinbox", "zoho people",
+    "hr policies", "labor law", "compliance", "training and development",
+    "learning and development", "succession planning", "attrition",
+    "employer branding", "background verification", "exit management"
+  ],
+  "healthcare_medical": [
+    "mbbs", "md", "bds", "nursing", "bsc nursing", "clinical", "patient care",
+    "icu", "critical care", "diagnostics", "radiology", "pathology",
+    "pharmacy", "pharmacology", "drug therapy", "ehr", "emr",
+    "medical coding", "icd-10", "cpt", "clinical research", "clinical trials",
+    "gcp", "protocol", "adverse event", "pharmacovigilance",
+    "hospital management", "healthcare administration", "public health"
+  ],
+  "design_creative": [
+    "photoshop", "illustrator", "indesign", "after effects", "premiere pro",
+    "figma", "sketch", "xd", "zeplin", "invision", "ui design", "ux design",
+    "user research", "wireframing", "prototyping", "typography",
+    "motion graphics", "3d modelling", "blender", "cinema 4d", "maya",
+    "branding", "graphic design", "visual design", "interaction design",
+    "design thinking", "accessibility", "responsive design"
+  ],
+  "sales_business_development": [
+    "b2b sales", "b2c sales", "enterprise sales", "saas sales",
+    "business development", "client acquisition", "lead generation",
+    "crm", "salesforce", "pipedrive", "hubspot crm", "cold calling",
+    "account management", "key account manager", "revenue generation",
+    "negotiation", "deal closing", "quota", "targets", "upselling",
+    "cross selling", "channel sales", "distribution management", "fmcg"
+  ],
+  "legal": [
+    "llb", "llm", "corporate law", "contract drafting", "litigation",
+    "arbitration", "mergers and acquisitions", "intellectual property",
+    "trademark", "patent", "copyright", "compliance", "gdpr",
+    "sebi regulations", "company law", "competition law", "tax law",
+    "labour law", "legal research", "due diligence", "corporate governance"
+  ],
+  "education_teaching": [
+    "curriculum development", "lesson planning", "pedagogy",
+    "classroom management", "student assessment", "b.ed", "m.ed",
+    "cbse", "icse", "tutoring", "e-learning", "lms", "moodle",
+    "instructional design", "special education", "montessori",
+    "academic writing", "research methodology", "teaching"
   ]
 }

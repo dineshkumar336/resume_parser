@@ -5,4 +5,7 @@ PyPDF2==3.0.1
 pandas==2.2.3
 numpy==2.2.4
 sentence-transformers
+python-docx
+requests
+python-dotenv
 

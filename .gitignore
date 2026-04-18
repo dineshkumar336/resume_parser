@@ -28,3 +28,9 @@ Thumbs.db
 
 # Models cache
 .cache/
+
+# Job API file cache
+cache/
+
+# Environment secrets
+.env

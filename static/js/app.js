@@ -58,8 +58,9 @@ uploadZone.addEventListener('drop', (e) => {
 });
 
 function handleFileSelected(file) {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-        showError('Please upload a PDF file.');
+    const allowedExts = ['.pdf', '.docx', '.txt'];
+    if (!allowedExts.some(ext => file.name.toLowerCase().endsWith(ext))) {
+        showError('Please upload a PDF, DOCX, or TXT file.');
         return;
     }
     selectedFile = file;
@@ -181,7 +182,7 @@ function showLoading() {
             currentStep++;
             steps[currentStep].classList.add('active');
         }
-    }, 800);
+    }, 2000);  // slower — live API fetch takes time
 }
 
 function hideLoading() {
@@ -273,16 +274,16 @@ function renderScore(score) {
 
     // Set verdict
     if (total >= 80) {
-        scoreVerdict.textContent = '🌟 Excellent Resume!';
-        scoreVerdict.style.color = '#06d6a0';
+        scoreVerdict.textContent = 'Excellent Resume';
+        scoreVerdict.style.color = '#0ea5e9'; // Match new sky blue light theme
     } else if (total >= 60) {
-        scoreVerdict.textContent = '👍 Good, Needs Some Improvements';
+        scoreVerdict.textContent = 'Good, Needs Precision';
         scoreVerdict.style.color = '#f59e0b';
     } else if (total >= 40) {
-        scoreVerdict.textContent = '⚠️ Needs Significant Work';
+        scoreVerdict.textContent = 'Needs Significant Work';
         scoreVerdict.style.color = '#f59e0b';
     } else {
-        scoreVerdict.textContent = '🔧 Major Improvements Needed';
+        scoreVerdict.textContent = 'Major Improvements Needed';
         scoreVerdict.style.color = '#ef4444';
     }
 }
@@ -308,11 +309,11 @@ function renderBreakdown(score) {
     container.innerHTML = '';
 
     const labels = {
-        sections: { name: 'Resume Sections', icon: '📋' },
-        skills: { name: 'Skills Detected', icon: '⚡' },
-        action_verbs: { name: 'Action Verbs', icon: '✍️' },
-        word_count: { name: 'Content Length', icon: '📄' },
-        contact_info: { name: 'Contact Info', icon: '📧' }
+        sections: { name: 'Resume Sections' },
+        skills: { name: 'Skills Detected' },
+        action_verbs: { name: 'Action Verbs' },
+        word_count: { name: 'Content Length' },
+        contact_info: { name: 'Contact Info' }
     };
 
     const breakdown = score.breakdown;
@@ -327,7 +328,7 @@ function renderBreakdown(score) {
         item.className = 'breakdown-item';
         item.innerHTML = `
             <div class="breakdown-header">
-                <span class="breakdown-name">${info.icon} ${info.name}</span>
+                <span class="breakdown-name">${info.name}</span>
                 <span class="breakdown-score">${value}/${max}</span>
             </div>
             <div class="breakdown-bar">
@@ -349,16 +350,35 @@ function renderBreakdown(score) {
 function renderSkills(skillsByCategory, allSkills) {
     const container = document.getElementById('skills-tag-cloud');
     const countEl = document.getElementById('skills-count');
+    
+    // Use an auto-fitting grid layout so categories sit elegantly side-by-side
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fit, minmax(260px, 1fr))';
+    container.style.gap = '32px';
+    
     container.innerHTML = '';
 
     let delay = 0;
     for (const [category, skills] of Object.entries(skillsByCategory)) {
+        const catBlock = document.createElement('div');
+        catBlock.className = 'skill-category-block';
+        
+        // Format category name (e.g., "programming_languages" -> "Programming Languages")
+        const catName = category.replace(/_/g, ' ');
+        catBlock.innerHTML = `
+            <div class="skill-category-title" style="font-size: 0.9rem; font-weight: 700; color: var(--accent-blue); margin-bottom: 10px; text-transform: capitalize; border-bottom: 1px solid var(--border); padding-bottom: 4px;">${catName}</div>
+            <div class="skill-category-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+        `;
+        container.appendChild(catBlock);
+        
+        const tagsContainer = catBlock.querySelector('.skill-category-tags');
+        
         for (const skill of skills) {
             const tag = document.createElement('span');
             tag.className = `skill-tag cat-${category}`;
             tag.textContent = skill;
-            tag.style.animationDelay = `${delay * 50}ms`;
-            container.appendChild(tag);
+            tag.style.animationDelay = `${delay * 30}ms`;
+            tagsContainer.appendChild(tag);
             delay++;
         }
     }
@@ -405,8 +425,7 @@ function renderRecommendations(recommendations) {
     if (recommendations.length === 0) {
         container.innerHTML = `
             <div class="rec-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                <div style="font-size: 2rem; margin-bottom: 12px;">🎉</div>
-                <h3 style="margin-bottom: 8px;">Great Job!</h3>
+                <h3 style="margin-bottom: 8px;">Outstanding Resume</h3>
                 <p style="color: var(--text-secondary);">Your resume looks well-structured. Keep it up!</p>
             </div>
         `;
@@ -419,7 +438,6 @@ function renderRecommendations(recommendations) {
         card.style.animationDelay = `${idx * 100}ms`;
         card.innerHTML = `
             <div class="rec-card-header">
-                <div class="rec-icon">${rec.icon}</div>
                 <div>
                     <div class="rec-title">${rec.title}</div>
                     <span class="rec-priority ${rec.priority}">${rec.priority} priority</span>
@@ -467,7 +485,6 @@ function renderJobs(jobs) {
     if (!jobs || jobs.length === 0) {
         container.innerHTML = `
             <div class="job-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
                 <h3 style="margin-bottom: 8px;">No Matches Found</h3>
                 <p style="color: var(--text-secondary);">Try adding more details to your resume.</p>
             </div>
@@ -482,15 +499,6 @@ function renderJobs(jobs) {
         card.className = 'job-card';
         card.style.animationDelay = `${idx * 100}ms`;
 
-        // Build skills HTML
-        const matchedSkillsHtml = job.matched_skills
-            .map(s => `<span class="job-skill matched">✓ ${s}</span>`)
-            .join('');
-        const missingSkillsHtml = job.missing_skills
-            .slice(0, 5)
-            .map(s => `<span class="job-skill missing">✗ ${s}</span>`)
-            .join('');
-
         card.innerHTML = `
             <div class="job-header">
                 <div>
@@ -499,44 +507,27 @@ function renderJobs(jobs) {
                 </div>
                 <div style="display: flex; gap: 4px; flex-direction: column; align-items: flex-end;">
                     <div class="job-match-badge ${matchClass}">Hybrid Match: ${job.match_score}%</div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">
                         Semantic: ${job.semantic_score}% | Keyword: ${job.keyword_score}%
+                    </div>
+                    <div class="job-source-badge ${job.source === 'live' ? 'live' : 'fallback'}">
+                        ${job.source === 'live' ? '🌐 Live Job' : '📁 Local'}
                     </div>
                 </div>
             </div>
             <div class="job-meta">
-                <span class="job-meta-item"><span class="job-meta-icon">📍</span> ${job.location}</span>
-                <span class="job-meta-item"><span class="job-meta-icon">📂</span> ${job.category}</span>
-                <span class="job-meta-item"><span class="job-meta-icon">📊</span> ${job.experience_level}</span>
-                <span class="job-meta-item"><span class="job-meta-icon">💰</span> ${job.salary_range}</span>
+                <span class="job-meta-item"><span class="job-meta-icon">Loc:</span> ${job.location}</span>
+                <span class="job-meta-item"><span class="job-meta-icon">Dept:</span> ${job.category}</span>
+                <span class="job-meta-item"><span class="job-meta-icon">Exp:</span> ${job.experience_level}</span>
+                <span class="job-meta-item"><span class="job-meta-icon">Pay:</span> ${job.salary_range}</span>
             </div>
             <p class="job-description">${job.description}</p>
-            <div class="job-skills-section">
-                <div class="job-skills-title">Skill Match</div>
-                <div class="job-skills-list">
-                    ${matchedSkillsHtml}
-                    ${missingSkillsHtml}
-                </div>
-            </div>
-            <div class="job-skill-match-bar">
-                <div class="job-skill-match-header">
-                    <span class="job-skill-match-label">Skill Overlap</span>
-                    <span class="job-skill-match-pct">${job.skill_match_pct}%</span>
-                </div>
-                <div class="job-skill-match-track">
-                    <div class="job-skill-match-fill" style="width: 0%;" data-width="${job.skill_match_pct}%"></div>
-                </div>
-            </div>
+            ${job.job_apply_link && job.job_apply_link !== 'None' && job.job_apply_link !== '' ? 
+                `<a href="${job.job_apply_link}" target="_blank" rel="noopener noreferrer" class="btn-apply-now">Apply Now →</a>` 
+                : ''}
         `;
         container.appendChild(card);
     });
-
-    // Animate skill match bars
-    setTimeout(() => {
-        container.querySelectorAll('.job-skill-match-fill').forEach(bar => {
-            bar.style.width = bar.dataset.width;
-        });
-    }, 500);
 }
 
 // ===== Keyboard Shortcuts =====

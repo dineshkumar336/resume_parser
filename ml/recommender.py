@@ -11,6 +11,8 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.naive_bayes import MultinomialNB
+from ml.job_scraper import get_jobs_with_fallback
+from ml.domain_detector import detect_career_domain
 
 # Global Sentence Transformer Model cache for lazy loading
 _sent_model = None
@@ -25,47 +27,37 @@ def get_sentence_model():
         print(">>> Semantic Engine Ready!")
     return _sent_model
 
-# Path to job dataset
+# Path to job dataset (kept as fallback)
 JOBS_CSV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "jobs_dataset.csv")
 
 def load_jobs_dataset():
-    """Load the jobs dataset from CSV."""
+    """Load the jobs dataset from CSV (fallback only)."""
     return pd.read_csv(JOBS_CSV_PATH)
 
-def predict_category(resume_text, jobs_df):
+def predict_category(resume_text, jobs_df=None):
     """
-    Train a Naive Bayes classifier on the fly to predict the candidate's optimal Job Category.
+    Predict the candidate's optimal career categories using the multi-domain
+    Naive Bayes model from domain_detector (covers 15+ domains, not just IT).
+    Returns top-3 predictions with probability scores for the UI cards.
     """
     try:
-        # Prepare training data
-        X_train = jobs_df["description"].fillna("") + " " + jobs_df["required_skills"].fillna("")
-        y_train = jobs_df["category"].fillna("General")
-        
-        # Convert text to term frequencies
-        vectorizer = CountVectorizer(stop_words='english', max_features=3000)
-        X_train_vec = vectorizer.fit_transform(X_train)
-        
-        # Train generic fast Naive Bayes Model
-        clf = MultinomialNB()
-        clf.fit(X_train_vec, y_train)
-        
-        # Predict candidate
+        from ml.domain_detector import NB_SEED_DATA, _get_nb_model
+        clf, vectorizer = _get_nb_model()
+
         resume_vec = vectorizer.transform([resume_text])
         probs = clf.predict_proba(resume_vec)[0]
-        
-        # Package and format predictions
         classes = clf.classes_
+
         predictions = []
         for i, prob in enumerate(probs):
-            if prob > 0.05:  # Only threshold probabilities > 5%
+            if prob > 0.05:  # Only show predictions > 5% confidence
                 predictions.append({
                     "category": classes[i],
                     "probability": round(float(prob) * 100, 1)
                 })
-        
-        # Sort by best matched category
+
         predictions.sort(key=lambda x: x["probability"], reverse=True)
-        return predictions[:3]  # Return top 3 predictions
+        return predictions[:3]
     except Exception as e:
         print(f"Prediction fallback due to error: {e}")
         return []
@@ -152,8 +144,8 @@ def calculate_resume_score(parsed_data):
         }
     }
 
-def generate_recommendations(parsed_data):
-    """Generate professional improvement recommendations."""
+def generate_recommendations(parsed_data, top_category="Software Engineering"):
+    """Generate professional improvement recommendations tailored to the career domain."""
     recommendations = []
     sections = parsed_data.get("sections", {})
     all_skills = parsed_data.get("all_skills", [])
@@ -162,21 +154,27 @@ def generate_recommendations(parsed_data):
     word_count = parsed_data.get("word_count", 0)
     skills_by_category = parsed_data.get("skills", {})
     
+    # IT/Tech-specific flags
+    is_tech = top_category in ["Software Engineering", "Data Science", "DevOps", "UI/UX Design"]
+    
     # Example Section Checks
     if not sections.get("objective"):
-        recommendations.append({"type": "section", "priority": "medium", "icon": "📝", "title": "Add a Professional Summary", "message": "Include a 2-3 line summary."})
-    if not sections.get("projects"):
-        recommendations.append({"type": "section", "priority": "high", "icon": "🚀", "title": "Add a Projects Section", "message": "Projects demonstrate practical skills beyond academics."})
-    if not sections.get("experience") and not sections.get("projects"):
-        recommendations.append({"type": "section", "priority": "high", "icon": "💼", "title": "Add Work Experience", "message": "Include any internships or relevant part-time jobs."})
+        recommendations.append({"type": "section", "priority": "medium", "title": "Add a Professional Summary", "message": "Include a 2-3 line summary."})
+    
+    if is_tech and not sections.get("projects"):
+        recommendations.append({"type": "section", "priority": "high", "title": "Add a Projects Section", "message": "Projects demonstrate practical skills beyond academics."})
+    
+    if not sections.get("experience") and not (is_tech and sections.get("projects")):
+        recommendations.append({"type": "section", "priority": "high", "title": "Add Work Experience", "message": "Include any internships, clinicals, or relevant jobs."})
     
     if len(all_skills) < 5:
-        recommendations.append({"type": "skill", "priority": "high", "icon": "⚡", "title": "Add Technical Skills", "message": "List 8-15 relevant skills to improve ATS scoring."})
-    if "version_control" not in skills_by_category:
-        recommendations.append({"type": "skill", "priority": "medium", "icon": "🔧", "title": "Add Git/Version Control", "message": "Mention Git or GitHub as it is universally expected."})
+        recommendations.append({"type": "skill", "priority": "high", "title": "Add Professional Skills", "message": "List 8-15 relevant skills to improve ATS scoring."})
+    
+    if is_tech and "version_control" not in skills_by_category:
+        recommendations.append({"type": "skill", "priority": "medium", "title": "Add Git/Version Control", "message": "Mention Git or GitHub as it is universally expected in tech."})
     
     if len(action_verbs) < 4:
-        recommendations.append({"type": "content", "priority": "medium", "icon": "✍️", "title": "Use Stronger Action Verbs", "message": "Start bullet points with verbs like Developed or Led."})
+        recommendations.append({"type": "content", "priority": "medium", "title": "Use Stronger Action Verbs", "message": "Start bullet points with verbs like Developed or Led."})
     
     # Priority sorting
     priority_order = {"high": 0, "medium": 1, "low": 2}
@@ -184,24 +182,29 @@ def generate_recommendations(parsed_data):
     return recommendations
 
 
-def match_jobs(resume_text, top_n=10, jobs_df=None):
+def match_jobs(resume_text, top_n=10, jobs_list=None):
     """
     Advanced Job Matcher using a Hybrid ML Approach:
     - 40% TF-IDF: Preserves exact keyword and technology stack matching.
     - 60% Sentence-BERT: Dense Semantic Vectors understand contextual similarity.
+    Accepts a list of job dicts (live or from CSV).
     """
-    if jobs_df is None:
+    if not jobs_list:
+        # Fallback: load from CSV
         jobs_df = load_jobs_dataset()
-        
+        jobs_list = jobs_df.to_dict(orient='records')
+
+    jobs_df = pd.DataFrame(jobs_list)
+
     jobs_df["combined_text"] = (
         jobs_df["job_title"].fillna("") + " " +
         jobs_df["description"].fillna("") + " " +
         jobs_df["required_skills"].fillna("") + " " +
         jobs_df["category"].fillna("")
     )
-    
+
     corpus = [resume_text] + jobs_df["combined_text"].tolist()
-    
+
     # --- 1. TF-IDF VECTORIZATION (Keyword Math) ---
     tfidf_vectorizer = TfidfVectorizer(
         stop_words="english",
@@ -210,49 +213,53 @@ def match_jobs(resume_text, top_n=10, jobs_df=None):
     )
     tfidf_matrix = tfidf_vectorizer.fit_transform(corpus)
     tfidf_sims = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-    
+
     # --- 2. DENSE SEMANTIC EMBEDDINGS (Sentence Transformers) ---
     model = get_sentence_model()
     embeddings = model.encode(corpus, show_progress_bar=False)
     semantic_sims = cosine_similarity([embeddings[0]], embeddings[1:]).flatten()
-    
+
     # --- 3. HYBRID SCORING ---
     hybrid_scores = (tfidf_sims * 0.4) + (semantic_sims * 0.6)
-    
+
     top_indices = hybrid_scores.argsort()[::-1][:top_n]
-    
+
     results = []
     for idx in top_indices:
         job = jobs_df.iloc[idx]
         total_score = float(hybrid_scores[idx])
         sem_score = float(semantic_sims[idx])
         key_score = float(tfidf_sims[idx])
-        
+
         if total_score < 0.05: continue
-        
+
         # Skill analysis
         job_skills = set(s.strip().lower() for s in str(job["required_skills"]).split(","))
         resume_lower = resume_text.lower()
         matched_skills = [s for s in job_skills if s in resume_lower]
         missing_skills = [s for s in job_skills if s not in resume_lower]
-        
+
         results.append({
-            "id": int(job["id"]),
-            "job_title": str(job["job_title"]),
-            "company": str(job["company"]),
-            "location": str(job["location"]),
-            "category": str(job["category"]),
+            "id":               int(job.get("id", idx)),
+            "job_title":        str(job["job_title"]),
+            "company":          str(job["company"]),
+            "location":         str(job["location"]),
+            "category":         str(job["category"]),
             "experience_level": str(job["experience_level"]),
-            "salary_range": str(job["salary_range"]),
-            "description": str(job["description"]),
-            "match_score": round(total_score * 100, 1),
-            "semantic_score": round(sem_score * 100, 1),
-            "keyword_score": round(key_score * 100, 1),
-            "matched_skills": matched_skills,
-            "missing_skills": missing_skills,
-            "skill_match_pct": round(len(matched_skills) / max(len(job_skills), 1) * 100, 1)
+            "salary_range":     str(job["salary_range"]),
+            "description":      str(job["description"]),
+            "match_score":      round(total_score * 100, 1),
+            "semantic_score":   round(sem_score * 100, 1),
+            "keyword_score":    round(key_score * 100, 1),
+            "matched_skills":   matched_skills,
+            "missing_skills":   missing_skills,
+            # Live-job extras (empty string if from CSV fallback)
+            "job_apply_link":   str(job.get("job_apply_link", "")),
+            "employer_logo":    str(job.get("employer_logo", "")),
+            "job_posted_at":    str(job.get("job_posted_at", "")),
+            "source":           str(job.get("source", "fallback")),
         })
-    
+
     return results
 
 def get_skill_gap_analysis(parsed_data, top_jobs):
@@ -271,39 +278,189 @@ def get_skill_gap_analysis(parsed_data, top_jobs):
         for k, v in sorted_skills[:10]
     ]
 
+def print_terminal_report(res):
+    print("\n========================================")
+    print("RESUME PARSER — RESULTS")
+    print("========================================\n")
+    
+    # Contact
+    print("CONTACT")
+    contact = res.get("contact_info", {})
+    if contact:
+        for k, v in contact.items():
+            print(f"  {k:<9} : {v}")
+    else:
+        print("  (none detected)")
+    print()
+    
+    # Education
+    print("EDUCATION")
+    edu_content = res.get("section_content", {}).get("education")
+    if edu_content:
+        for line in edu_content.split('\n'):
+            print(f"  {line}")
+    elif res.get("sections", {}).get("education"):
+        print("  (detected)")
+    else:
+        print("  (none detected)")
+    print()
+    
+    # Experience
+    print("EXPERIENCE")
+    exp_content = res.get("section_content", {}).get("experience")
+    if exp_content:
+        for line in exp_content.split('\n'):
+            print(f"  {line}")
+    elif res.get("sections", {}).get("experience"):
+        print("  (detected)")
+    else:
+        print("  (none detected)")
+    print()
+    
+    # Skills
+    print("SKILLS")
+    skills = res.get("extracted_skills", {})
+    if skills:
+        for k, v in skills.items():
+            k_str = k if len(k) <= 12 else k[:12]
+            print(f"  {k_str:<12}: {', '.join(v)}")
+    else:
+        print("  (none detected)")
+    print()
+    
+    # Projects
+    print("PROJECTS")
+    proj_content = res.get("section_content", {}).get("projects")
+    if proj_content:
+        for line in proj_content.split('\n'):
+            print(f"  {line}")
+    elif res.get("sections", {}).get("projects"):
+        print("  (detected)")
+    else:
+        print("  (none detected)")
+    print()
+    
+    # ML PREDICTIONS
+    preds = res.get("predicted_categories", [])
+    print(f"AI CAREER PREDICTIONS ({len(preds)} found)")
+    if preds:
+        for p in preds:
+            print(f"  [NB    ] {p['category']:<20} conf: {p['probability']/100:.3f}")
+    else:
+        print("  (none)")
+    print()
+    
+    # JOB MATCHES
+    top_jobs = res.get("top_jobs", [])
+    print(f"HYBRID JOB MATCHES ({len(top_jobs[:5])} displayed)")
+    if top_jobs:
+        for i, job in enumerate(top_jobs[:5]):
+            title = job['job_title']
+            if len(title) > 25:
+                title = title[:22] + "..."
+            print(f"  {i+1}. {title:<25} | Score: {job['match_score']:>4}%  (SBERT: {job['semantic_score']:>4}%, TF-IDF: {job['keyword_score']:>4}%)")
+    else:
+        print("  (none)")
+    print()
+    
+    # ATS SCORE
+    score = res.get("score", {})
+    total = score.get("total", 0)
+    print(f"ATS SCORE: {total}/100")
+    
+    def bar(val, max_val, length=20):
+        val = int(val)
+        max_val = int(max_val)
+        if max_val == 0: max_val = 1
+        filled = int((val / max_val) * length)
+        # Ensure filled doesn't exceed length
+        filled = min(filled, length)
+        return '█' * filled + '░' * (length - filled)
+        
+    breakdown = score.get("breakdown", {})
+    max_s = score.get("max_scores", {})
+    
+    print(f"  contact   {bar(breakdown.get('contact_info', 0), max_s.get('contact_info', 15))}  {int(breakdown.get('contact_info', 0))}")
+    print(f"  skills    {bar(breakdown.get('skills', 0), max_s.get('skills', 25))}  {int(breakdown.get('skills', 0))}")
+    print(f"  sections  {bar(breakdown.get('sections', 0), max_s.get('sections', 30))}  {int(breakdown.get('sections', 0))}")
+    print(f"  action_vb {bar(breakdown.get('action_verbs', 0), max_s.get('action_verbs', 15))}  {int(breakdown.get('action_verbs', 0))}")
+    print(f"  words     {bar(breakdown.get('word_count', 0), max_s.get('word_count', 15))}  {int(breakdown.get('word_count', 0))}")
+    
+    print()
+    
+    # Missing/Recommendations
+    recs = res.get("recommendations", [])
+    if recs:
+        missing_titles = [r['title'] for r in recs]
+        print(f"Missing: {', '.join(missing_titles)}")
+    else:
+        print("Missing: (none! great job)")
+    print("\n")
+
+
 def analyze_resume(parsed_data):
     """
     Main execution pipeline for the advanced NLP analysis.
     Executes scoring, predictive classification, and hybrid job matching.
+    Now uses live JSearch API jobs, with CSV fallback.
     """
-    jobs_df = load_jobs_dataset()
-    
-    # Basic analysis
-    score = calculate_resume_score(parsed_data)
-    recommendations = generate_recommendations(parsed_data)
-    
+    print(f"\n[{'-'*10} ANALYZING RESUME {'-'*10}]")
+    jobs_df = load_jobs_dataset()   # used only for Naive Bayes training
+
     # Extract Full Text for Machine Learning Models
     resume_text = parsed_data.get("raw_text", "") + " " + " ".join(parsed_data.get("all_skills", []))
-    
-    # ADVANCED ML: Predict Job Categories
+
+    # TWO-STAGE DOMAIN DETECTION (for job search query)
+    # Stage 1: Keyword heuristics → Stage 2: Multi-domain NB fallback
+    print("-> Detecting career domain...")
+    top_category = detect_career_domain(resume_text)
+
+    # Basic analysis
+    score = calculate_resume_score(parsed_data)
+    print(f"-> Resume Score Calculated: {score['total']}/100")
+
+    recommendations = generate_recommendations(parsed_data, top_category)
+    print(f"-> Generated {len(recommendations)} improvement recommendations.")
+
+    # ADVANCED ML: Predict Job Categories (for UI display cards)
+    print("-> Running Naive Bayes Career Prediction...")
     predicted_categories = predict_category(resume_text, jobs_df)
-    
-    # ADVANCED ML: Hybrid Job Matching
-    top_jobs = match_jobs(resume_text, top_n=10, jobs_df=jobs_df)
-    
+    if predicted_categories:
+        print(f"   NB Top Prediction: {predicted_categories[0]['category']} ({predicted_categories[0]['probability']}%)")
+
+    # LIVE JOB FETCHING — uses top predicted category as search query
+    print(f"-> Fetching live jobs for category: '{top_category}'...")
+    live_jobs, is_live = get_jobs_with_fallback(top_category)
+    source_label = "Live (JSearch API)" if is_live else "Fallback (Local CSV)"
+    print(f"   Job Source: {source_label} — {len(live_jobs)} listings")
+
+    # ADVANCED ML: Hybrid Job Matching on live jobs
+    print("-> Running Hybrid Job Matching (SBERT + TF-IDF)...")
+    top_jobs = match_jobs(resume_text, top_n=10, jobs_list=live_jobs)
+    print(f"   Found {len(top_jobs)} relevant job matches.")
+
     # Skill Gaps
+    print("-> Analyzing Skill Gaps based on matches...")
     skill_gaps = get_skill_gap_analysis(parsed_data, top_jobs)
+    print(f"[{'-'*10} ANALYSIS COMPLETE {'-'*10}]\n")
     
-    return {
-        "score": score,
-        "recommendations": recommendations,
-        "top_jobs": top_jobs,
-        "predicted_categories": predicted_categories,  # New Feature
-        "skill_gaps": skill_gaps,
-        "extracted_skills": parsed_data.get("skills", {}),
-        "all_skills": parsed_data.get("all_skills", []),
-        "sections": parsed_data.get("sections", {}),
-        "action_verbs": parsed_data.get("action_verbs", []),
-        "contact_info": parsed_data.get("contact_info", {}),
-        "word_count": parsed_data.get("word_count", 0)
+    result = {
+        "score":               score,
+        "recommendations":     recommendations,
+        "top_jobs":            top_jobs,
+        "predicted_categories": predicted_categories,
+        "skill_gaps":          skill_gaps,
+        "extracted_skills":    parsed_data.get("skills", {}),
+        "all_skills":          parsed_data.get("all_skills", []),
+        "sections":            parsed_data.get("sections", {}),
+        "section_content":     parsed_data.get("section_content", {}),
+        "action_verbs":        parsed_data.get("action_verbs", []),
+        "contact_info":        parsed_data.get("contact_info", {}),
+        "word_count":          parsed_data.get("word_count", 0),
+        "jobs_source":         "live" if is_live else "fallback",
+        "top_category":        top_category,
     }
+    
+    print_terminal_report(result)
+    
+    return result

@@ -6,6 +6,7 @@ import re
 import json
 import os
 from PyPDF2 import PdfReader
+import docx
 
 
 # Load skills database
@@ -29,6 +30,16 @@ def extract_text_from_pdf(pdf_file):
         return text.strip()
     except Exception as e:
         raise ValueError(f"Error reading PDF: {str(e)}")
+
+
+def extract_text_from_docx(docx_file):
+    """Extract raw text from an uploaded DOCX file."""
+    try:
+        doc = docx.Document(docx_file)
+        text = "\n".join([para.text for para in doc.paragraphs])
+        return text.strip()
+    except Exception as e:
+        raise ValueError(f"Error reading DOCX: {str(e)}")
 
 
 def preprocess_text(text):
@@ -154,22 +165,89 @@ def count_words(text):
     return len(words)
 
 
-def parse_resume(pdf_file):
+def extract_section_content(text):
+    """Heuristic extraction of text blocks under each section header."""
+    section_keywords = {
+        "contact_info": ["contact", "contact info", "contact information"],
+        "objective": ["objective", "summary", "about me", "career objective", "professional summary"],
+        "education": ["education", "academic", "university", "college", "academic background"],
+        "experience": ["experience", "work history", "employment", "internship", "professional experience"],
+        "skills": ["skills", "technical skills", "technologies", "competencies", "proficiencies"],
+        "projects": ["project", "projects", "personal projects", "academic projects"],
+        "certifications": ["certification", "certifications", "licenses", "credentials"],
+        "achievements": ["achievement", "achievements", "awards", "honors", "accomplishments"],
+        "publications": ["publication", "publications", "research"],
+        "languages": ["languages", "language proficiency"],
+        "volunteer": ["volunteer", "volunteering", "community service"],
+        "hobbies": ["hobbies", "interests", "extracurricular"]
+    }
+    
+    lines = text.split('\n')
+    extracted_content = {}
+    current_section = None
+    
+    for line in lines:
+        cleaned_line = line.strip().lower()
+        if not cleaned_line:
+            continue
+            
+        words = cleaned_line.split()
+        if len(words) <= 5: 
+            found_header = False
+            for sec, keywords in section_keywords.items():
+                if any(cleaned_line == kw or cleaned_line.startswith(kw + ":") or cleaned_line.startswith(kw + " ") for kw in keywords):
+                    current_section = sec
+                    if sec not in extracted_content:
+                        extracted_content[sec] = []
+                    found_header = True
+                    break
+            if found_header:
+                continue
+                
+        if current_section:
+            extracted_content[current_section].append(line.strip())
+            
+    # Process extracted content without truncation for the terminal
+    for sec in list(extracted_content.keys()):
+        lines = [l.strip() for l in extracted_content[sec] if l.strip()]
+        if lines:
+            extracted_content[sec] = '\n'.join(lines)
+        else:
+            del extracted_content[sec]
+            
+    return extracted_content
+
+
+def parse_resume(file):
     """
-    Main function: parse a resume PDF and return structured analysis.
+    Main function: parse a resume file and return structured analysis.
     Returns a dictionary with all extracted information.
     """
+    file_ext = os.path.splitext(file.filename.lower())[1]
+    
+    print(f"\n[{'-'*10} PARSING RESUME {'-'*10}]")
+    print(f"-> Processing uploaded file: {file.filename}")
+    
     # Extract raw text
-    raw_text = extract_text_from_pdf(pdf_file)
+    if file_ext == ".pdf":
+        raw_text = extract_text_from_pdf(file)
+    elif file_ext == ".docx":
+        raw_text = extract_text_from_docx(file)
+    elif file_ext == ".txt":
+        raw_text = file.read().decode("utf-8")
+    else:
+        raise ValueError(f"Unsupported file format: {file_ext}")
     
     if not raw_text or len(raw_text.strip()) < 50:
-        raise ValueError("Could not extract meaningful text from the PDF. Please ensure the PDF contains selectable text (not a scanned image).")
+        raise ValueError("Could not extract meaningful text from the document. Please ensure it contains selectable text (not a scanned image).")
     
     # Preprocess
     clean_text = preprocess_text(raw_text)
     
     # Load skills DB
     skills_db = load_skills_database()
+    
+    print("-> Extracting skills, sections, and contact info...")
     
     # Extract everything
     result = {
@@ -178,6 +256,7 @@ def parse_resume(pdf_file):
         "word_count": count_words(raw_text),
         "skills": extract_skills(raw_text, skills_db),
         "sections": extract_sections(raw_text),
+        "section_content": extract_section_content(raw_text),
         "action_verbs": extract_action_verbs(raw_text),
         "contact_info": extract_contact_info(raw_text),
     }
@@ -187,5 +266,7 @@ def parse_resume(pdf_file):
     for category_skills in result["skills"].values():
         all_skills.extend(category_skills)
     result["all_skills"] = list(set(all_skills))
+    
+    print(f"-> Parsing Complete! Found {len(result['all_skills'])} skills, {len([k for k, v in result['sections'].items() if v])} sections, and {result['word_count']} words.")
     
     return result
